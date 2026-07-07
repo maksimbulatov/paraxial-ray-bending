@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Paraxial Ray Bending — Interactive (Geary, Ch. 4)</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b21; --panel2:#1e242c; --ink:#e8ebef; --muted:#9aa4b0;
+    --line:#2b323c; --accent:#4a9de8; --green:#5ec06a; --red:#f0968c; --grey:#6b7480;
+    --violet:#c792ea; --teal:#6de0c0; --amber:#e0a33c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:30px 22px 60px;}
+  h1{font-size:28px;font-weight:600;margin:0 0 4px;}
+  h2{font-size:20px;font-weight:600;margin:26px 0 10px;}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:16px;}
+  p{margin:10px 0;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;}
+  .eqbox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:16px;overflow-x:auto;}
+  .eqbox b{color:var(--accent)}
+  .eqbox .dim{color:var(--muted)}
+  .eqbox .eqline{padding:1px 4px;border-radius:6px;}
+  .eqbox .eqline.lit{background:rgba(74,157,232,.16);outline:1px solid rgba(74,157,232,.35);}
+  .tabs{display:flex;gap:8px;margin:18px 0 0;flex-wrap:wrap}
+  .tab{padding:10px 16px;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    border-radius:9px 9px 0 0;cursor:pointer;font-weight:500;font-size:16px;font-family:inherit;text-align:left;}
+  .tab:hover{color:var(--ink);}
+  .tab.on{background:var(--panel2);color:var(--ink);border-bottom-color:var(--panel2);}
+  .tab:focus-visible,.chip:focus-visible,.stepbtn:focus-visible,input:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;}
+  .stage{background:var(--panel2);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:14px;}
+  .goal{margin:0 0 10px;font-size:15px;color:var(--muted);}
+  .goal b{color:var(--ink);font-weight:600;}
+  canvas{width:100%;display:block;border-radius:8px;background:#0c0f13;}
+  .cwrap{position:relative;}
+  .handle{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;
+    touch-action:none;cursor:grab;background:transparent;border:none;padding:0;}
+  .handle:active{cursor:grabbing}
+  .handle:hover{box-shadow:0 0 0 3px rgba(74,157,232,.35);}
+  .ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 24px;margin-top:16px;}
+  .ctrl label{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:var(--muted);margin-bottom:4px;gap:8px;}
+  .val{display:inline-flex;align-items:center;gap:4px;}
+  .val em{font-style:normal;color:var(--muted);font-size:13px;}
+  input[type=range]{width:100%;accent-color:var(--accent);height:22px;}
+  .num{width:70px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;
+    padding:3px 7px;font-size:15px;font-variant-numeric:tabular-nums;text-align:right;font-weight:600;}
+  .num:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .readout{margin-top:14px;}
+  .pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:13px;font-weight:600;}
+  .pill.conv{background:rgba(94,192,106,.15);color:var(--green);}
+  .pill.div{background:rgba(224,106,94,.12);color:var(--red);}
+  .pill.flat{background:rgba(154,164,176,.15);color:var(--muted);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:10px;}
+  .legend i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px;}
+  .note{font-size:15px;color:var(--muted);}
+  code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:15px;}
+  .hint{font-size:15px;color:var(--amber);margin-top:8px;min-height:2.6em;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+  .chips .cap{font-size:13px;color:var(--muted);margin-right:2px;}
+  .chip{padding:4px 12px;border:1px solid var(--line);border-radius:16px;background:var(--panel);
+    color:var(--ink);font-size:14px;cursor:pointer;font-family:inherit;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .chal{font-size:14px;color:var(--muted);margin-top:10px;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;}
+  .chal .st{font-weight:600;color:var(--muted);}
+  .chal.ok{border-color:rgba(94,192,106,.5);}
+  .chal.ok .st{color:var(--green);}
+  .steps{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  .stepbtn{padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);
+    color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .stepbtn:hover:not(:disabled){border-color:var(--accent);}
+  .stepbtn:disabled{opacity:.4;cursor:default;}
+  .stepno{font-size:14px;color:var(--muted);}
+  table.ytable{border-collapse:collapse;margin-top:12px;font-size:14px;font-variant-numeric:tabular-nums;}
+  .ytable th,.ytable td{border:1px solid var(--line);padding:4px 12px;text-align:right;}
+  .ytable th{color:var(--muted);font-weight:500;}
+  .ytable td:first-child,.ytable th:first-child{text-align:left;color:var(--muted);}
+  .ytable td{color:var(--ink);}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  @media (max-width:520px){
+    .tabs{flex-direction:column;gap:6px;}
+    .tab{border-radius:9px;width:100%;}
+    .tab.on{border-color:var(--accent);}
+    .stage{border-radius:12px;}
+  }
+  @media print{
+    :root{--bg:#fff;--panel:#fff;--panel2:#f4f5f7;--ink:#111;--muted:#444;--line:#999;--accent:#134a7e;}
+    body{background:#fff;color:#111;}
+    canvas,.ctrls,.chips,.steps,.chal,.legend{display:none !important;}
+    .stage,.card{border-color:#999;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Paraxial Ray Bending</h1>
+  <p class="sub">An interactive walk-through of the Paraxial Ray Trace Equations — from Geary, <em>Introduction to Lens Design</em>, Chapter 4 (“Paraxial World”).</p>
+
+  <div class="card">
+    <p style="margin-top:2px">In the <b>paraxial world</b> every curved surface is replaced by a <b>flat plane that still has power</b>: it bends rays but adds no aberration. Two ray-trace equations do all the work — <b>bending</b> and <b>transfer</b>; the power equation just supplies each surface’s φ:</p>
+    <div class="eqbox">
+      bending&nbsp;(Eq 4.1):&nbsp; <b>n′·u′ = n·u − y·φ</b><br>
+      transfer (Eq 4.2):&nbsp; <b>y′ = y + u′·t</b><br>
+      <span class="dim">ingredient</span>&nbsp;(Eq 4.4):&nbsp; <b>φ = (n′ − n)·C</b>,&nbsp; C = 1/R
+    </div>
+    <p class="note"><b>y</b> = ray height at the surface (measured from the optical axis) · <b>u, u′</b> = ray slope before / after (u = tan U, U = angle to the axis) · <b>n, n′</b> = index before / after · <b>φ</b> = surface power · <b>C</b> = curvature · <b>t</b> = gap to the next surface · <b>y′</b> = height at the next surface.</p>
+    <p class="note" style="margin-bottom:2px">Eq 4.1 says each surface subtracts exactly <code>y·φ</code> from the <b>reduced slope n·u</b> — so a ray through the vertex (y = 0) feels no power-bend, and taller rays bend more. When the ray stays in air (n = n′ = 1, e.g. a thin lens) the slope itself drops by <code>y·φ</code>.</p>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Interactive demos">
+    <button class="tab on" id="tab-bend"  role="tab" aria-selected="true"  aria-controls="panel-bend">1 · Bending at one surface</button>
+    <button class="tab" id="tab-trace" role="tab" aria-selected="false" aria-controls="panel-trace" tabindex="-1">2 · Bend → transfer → bend</button>
+    <button class="tab" id="tab-image" role="tab" aria-selected="false" aria-controls="panel-image" tabindex="-1">3 · Why all rays meet at one image</button>
+  </div>
+
+  <!-- PANEL 1 : one surface -->
+  <div class="stage" id="panel-bend" role="tabpanel" aria-labelledby="tab-bend" tabindex="0">
+    <p class="goal"><b>Goal:</b> see that the bend is proportional to ray height y and to surface power φ — and to nothing else.</p>
+    <div class="cwrap">
+      <canvas id="c1" height="380" role="img" aria-label="Diagram: an incident ray hits a flat powered plane on the optical axis and refracts. Use the controls below to change the ray and the surface."></canvas>
+      <button class="handle" id="h1" aria-hidden="true" tabindex="-1" title="Drag to change ray height"></button>
+    </div>
+    <div class="legend">
+      <span><i style="background:#4a9de8"></i>incident ray</span>
+      <span><i style="background:#e0a33c"></i>refracted ray</span>
+      <span><i style="background:#6de0c0"></i>powered plane φ</span>
+      <span><i style="background:#6b7480"></i>un-bent path</span>
+      <span><i style="background:rgba(109,224,192,.55)"></i>ghost = the real curved surface (sag ×2)</span>
+      <span class="note">angles: u = tan U (slope = rise ⁄ run)</span>
+      <span class="note">Drag the blue dot, or use the controls.</span>
+    </div>
+    <div class="chips">
+      <span class="cap">Presets:</span>
+      <button class="chip" data-p1="y:0,u:0.15,C:0.004,n:1,np:1.5">vertex ray (y = 0)</button>
+      <button class="chip" data-p1="y:18,u:0.15,C:0,n:1,np:1.5">flat plane (φ = 0)</button>
+      <button class="chip" data-p1="y:18,u:0,C:-0.004,n:1,np:1.5">negative power</button>
+      <button class="chip" data-p1="y:18,u:0,C:0.004,n:1.5,np:1">glass → air (same C!)</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label for="n_y">Ray height&nbsp; y <span class="val"><input class="num" id="n_y" type="number" min="-42" max="42" step="0.5" value="18"><em>mm</em></span></label><input id="s_y" type="range" min="-42" max="42" step="0.5" value="18" aria-label="Ray height y in millimetres"></div>
+      <div class="ctrl"><label for="n_u">Incident slope&nbsp; u <span class="val"><input class="num" id="n_u" type="number" min="-0.30" max="0.30" step="0.005" value="0"><em>rad</em></span></label><input id="s_u" type="range" min="-0.30" max="0.30" step="0.005" value="0" aria-label="Incident slope u in radians"></div>
+      <div class="ctrl"><label for="n_C">Curvature&nbsp; C=1/R <span class="val"><input class="num" id="n_C" type="number" min="-0.008" max="0.008" step="0.0002" value="0.004"><em>/mm</em></span></label><input id="s_C" type="range" min="-0.008" max="0.008" step="0.0002" value="0.004" aria-label="Surface curvature C in inverse millimetres"></div>
+      <div class="ctrl"><label for="n_n">Index before&nbsp; n <span class="val"><input class="num" id="n_n" type="number" min="1.0" max="2.0" step="0.01" value="1.0"></span></label><input id="s_n" type="range" min="1.0" max="2.0" step="0.01" value="1.0" aria-label="Refractive index before the surface"></div>
+      <div class="ctrl"><label for="n_np">Index after&nbsp; n′ <span class="val"><input class="num" id="n_np" type="number" min="1.0" max="2.0" step="0.01" value="1.5"></span></label><input id="s_np" type="range" min="1.0" max="2.0" step="0.01" value="1.5" aria-label="Refractive index after the surface"></div>
+    </div>
+    <div class="readout eqbox" style="margin-top:16px" aria-live="polite">
+      <span class="dim">(4.4)</span>&nbsp; φ = (n′−n)·C = (<span id="r_np">1.50</span> − <span id="r_n">1.00</span>)·<span id="r_C">0.0040</span> = <b id="r_phi">0.00200</b> /mm&nbsp; (R = <span id="r_R">250</span> mm)<br>
+      <span class="dim">(4.1)</span>&nbsp; n′·u′ = n·u − y·φ = (<span id="r_n2">1.00</span>)(<span id="r_u">0.000</span>) − (<span id="r_y">18.0</span>)(<span id="r_phi2">0.00200</span>) = <b id="r_nu">−0.0360</b><br>
+      power-bend Δ(n·u) = −y·φ = <b id="r_dnu">−0.0360</b>&nbsp;&nbsp;⇒&nbsp; u′ = <b id="r_up">−0.0240</b>,&nbsp; slope change Δu = <b id="r_bend">−0.0240</b>&nbsp; <span id="r_state" class="pill conv">toward axis</span><br>
+      <span class="dim" id="r_note" style="display:none">Δu ≠ −y·φ here: Eq 4.1 bends the reduced slope n·u — to get u′, divide the new n′·u′ by n′.</span>
+    </div>
+    <p class="hint" id="r_msg" aria-live="polite">A positive-power surface converges light: the ray bends toward the axis.</p>
+    <p class="chal" id="chal1"><b>Try it:</b> bend the ray so it leaves exactly parallel to the axis (u′ = 0). You need n·u = y·φ. <span class="st" id="chal1st">not solved yet</span></p>
+  </div>
+
+  <!-- PANEL 2 : two surfaces, step-through -->
+  <div class="stage" id="panel-trace" role="tabpanel" aria-labelledby="tab-trace" tabindex="0" style="display:none">
+    <p class="goal"><b>Goal:</b> run the two equations by hand — bend, fly, bend, fly — and watch them produce the focal length. Air on both outer sides; the gap between the surfaces has index n. With n = 1 you have two thin lenses; with n &gt; 1 and a small gap it is a real <b>thick lens</b> (Eq 4.18).</p>
+    <canvas id="c3" height="380" role="img" aria-label="Diagram: a horizontal ray passes through two powered planes separated by a gap of index n and comes to a focus. Step through the trace with the buttons below."></canvas>
+    <div class="legend">
+      <span><i style="background:#4a9de8"></i>input ray (u₀ = 0)</span>
+      <span><i style="background:#e0a33c"></i>after surface 1</span>
+      <span><i style="background:#5ec06a"></i>after surface 2</span>
+      <span><i style="background:#6de0c0"></i>powered planes</span>
+    </div>
+    <div class="steps">
+      <button class="stepbtn" id="t_prev">◀ Back</button>
+      <button class="stepbtn" id="t_next">Next step ▶</button>
+      <span class="stepno" id="t_stepno">step 0 of 4</span>
+    </div>
+    <div class="chips">
+      <span class="cap">Presets:</span>
+      <button class="chip" data-p2="y0:18,p1:0.01,p2:0.01,t:0,n:1">thin lens (t = 0): powers add</button>
+      <button class="chip" data-p2="y0:18,p1:0.01,p2:0.01,t:6,n:1.5">thick lens (n = 1.5)</button>
+      <button class="chip" data-p2="y0:18,p1:0.02,p2:0.02,t:100,n:1">telescope (afocal)</button>
+      <button class="chip" data-p2="y0:18,p1:0.01,p2:0.01,t:40,n:1">reset example</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label for="n_y0">Input height&nbsp; y₀ <span class="val"><input class="num" id="n_y0" type="number" min="-30" max="30" step="1" value="18"><em>mm</em></span></label><input id="s_y0" type="range" min="-30" max="30" step="1" value="18" aria-label="Input ray height in millimetres"></div>
+      <div class="ctrl"><label for="n_p1">Power&nbsp; φ₁ <span class="val"><input class="num" id="n_p1" type="number" min="-0.02" max="0.02" step="0.001" value="0.01"><em>/mm</em></span></label><input id="s_p1" type="range" min="-0.02" max="0.02" step="0.001" value="0.01" aria-label="Power of surface 1 in inverse millimetres"></div>
+      <div class="ctrl"><label for="n_p2">Power&nbsp; φ₂ <span class="val"><input class="num" id="n_p2" type="number" min="-0.02" max="0.02" step="0.001" value="0.01"><em>/mm</em></span></label><input id="s_p2" type="range" min="-0.02" max="0.02" step="0.001" value="0.01" aria-label="Power of surface 2 in inverse millimetres"></div>
+      <div class="ctrl"><label for="n_t">Gap&nbsp; t <span class="val"><input class="num" id="n_t" type="number" min="0" max="120" step="1" value="40"><em>mm</em></span></label><input id="s_t" type="range" min="0" max="120" step="1" value="40" aria-label="Gap between the two surfaces in millimetres"></div>
+      <div class="ctrl"><label for="n_tn">Gap index&nbsp; n <span class="val"><input class="num" id="n_tn" type="number" min="1.0" max="2.0" step="0.01" value="1.0"></span></label><input id="s_tn" type="range" min="1.0" max="2.0" step="0.01" value="1.0" aria-label="Refractive index of the gap between the surfaces"></div>
+    </div>
+    <div class="readout eqbox" style="margin-top:16px" aria-live="polite">
+      <span class="eqline" id="t_eq1">bending&nbsp;(4.1): u′ = u − y·φ</span><br>
+      <span class="eqline" id="t_eq2">transfer (4.2): y′ = y + u′·t</span><br>
+      <span id="t_calc" class="dim">Press “Next step” to start the trace.</span>
+    </div>
+    <table class="ytable" aria-live="polite">
+      <caption class="sr">Ray trace worksheet: height y and slope u after each step</caption>
+      <thead><tr><th scope="col">step</th><th scope="col">y (mm)</th><th scope="col">u after</th></tr></thead>
+      <tbody id="t_rows"><tr><td>input (u₀ = 0)</td><td>18.0</td><td>0.000</td></tr></tbody>
+    </table>
+    <p class="hint" id="t_msg" aria-live="polite">A collimated ray enters at height y₀. Step through the trace — bend, fly, bend, fly.</p>
+  </div>
+
+  <!-- PANEL 3 : imaging -->
+  <div class="stage" id="panel-image" role="tabpanel" aria-labelledby="tab-image" tabindex="0" style="display:none">
+    <p class="goal"><b>Goal:</b> convince yourself that <em>every</em> ray height crosses the axis at the <em>same</em> point — that single meeting point is what “image” means to first order.</p>
+    <div class="cwrap">
+      <canvas id="c2" height="380" role="img" aria-label="Diagram: a fan of rays leaves an on-axis object, refracts at a thin lens, and meets at one image point. Use the controls below to move the object."></canvas>
+      <button class="handle" id="h2" aria-hidden="true" tabindex="-1" title="Drag to move the object"></button>
+    </div>
+    <div class="legend">
+      <span><i style="background:#4a9de8"></i>rays from on-axis object</span>
+      <span><i style="background:#e0a33c"></i>after the lens</span>
+      <span><i style="background:#c792ea"></i>your ray (pick its height)</span>
+      <span><i style="background:#6de0c0"></i>thin lens φ = 1/f</span>
+      <span class="note">Drag the object dot, or use the controls.</span>
+    </div>
+    <div class="chips">
+      <span class="cap">Presets:</span>
+      <button class="chip" data-p3="2f">object at 2f (image at 2f)</button>
+      <button class="chip" data-p3="f">object at f (collimated)</button>
+      <button class="chip" data-p3="inf">object inside f (virtual)</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label for="n_d">Object distance&nbsp; d <span class="val"><input class="num" id="n_d" type="number" min="45" max="260" step="1" value="150"><em>mm</em></span></label><input id="s_d" type="range" min="45" max="260" step="1" value="150" aria-label="Object distance in millimetres"></div>
+      <div class="ctrl"><label for="n_f">Focal length&nbsp; f <span class="val"><input class="num" id="n_f" type="number" min="35" max="200" step="1" value="60"><em>mm</em></span></label><input id="s_f" type="range" min="35" max="200" step="1" value="60" aria-label="Focal length in millimetres"></div>
+      <div class="ctrl"><label for="n_A">Aperture&nbsp; <span class="val"><input class="num" id="n_A" type="number" min="8" max="46" step="1" value="32"><em>mm</em></span></label><input id="s_A" type="range" min="8" max="46" step="1" value="32" aria-label="Aperture half-height in millimetres"></div>
+      <div class="ctrl"><label for="n_N">Number of rays <span class="val"><input class="num" id="n_N" type="number" min="3" max="11" step="2" value="7"></span></label><input id="s_N" type="range" min="3" max="11" step="2" value="7" aria-label="Number of rays in the fan"></div>
+      <div class="ctrl"><label for="n_Y">Your ray height&nbsp; Y <span class="val"><input class="num" id="n_Y" type="number" min="-46" max="46" step="1" value="24"><em>mm</em></span></label><input id="s_Y" type="range" min="-46" max="46" step="1" value="24" aria-label="Height of your highlighted ray at the lens, in millimetres"></div>
+    </div>
+    <div class="readout eqbox" style="margin-top:16px" aria-live="polite">
+      thin lens in air (n = n′ = 1):&nbsp; φ = 1/f = <b id="i_phi">0.01667</b> /mm&nbsp; <span class="dim">(two surfaces traced with t → 0: φ = φ₁ + φ₂ — see tab 2)</span><br>
+      your ray:&nbsp; u = Y/d = <span id="i_u">0.160</span>,&nbsp; u′ = u − Y·φ = <b id="i_up">−0.2400</b>,&nbsp; transfer to axis (4.2): 0 = Y + u′·l′ ⇒ l′ = −Y/u′ = <b id="i_lpY">100.0 mm</b> <span class="dim">— same for every Y you pick</span><br>
+      divide by Y — the height cancels; that quotient <i>is</i> the Gaussian formula (4.3):&nbsp; 1/l′ − 1/l = φ,&nbsp; l = −d&nbsp; ⇒&nbsp; l′ = f·d/(d−f) = <b id="i_lp">100.0 mm</b>&nbsp; <span id="i_state" class="pill conv">real image</span>
+    </div>
+    <p class="hint" id="i_msg" aria-live="polite">Every ray — whatever its height — crosses the axis at the same point l′. That single meeting point is what “imaging” means to first order.</p>
+    <p class="chal" id="chal2"><b>Try it:</b> place the object so the image lands exactly at 2f behind the lens. <span class="st" id="chal2st">not solved yet</span></p>
+  </div>
+
+  <h2>Sign conventions</h2>
+  <p class="note"><b>Heights</b> y are measured from the optical axis, upward positive. <b>Axial distances</b> are measured from the surface, negative to the left — so an object a distance d in front of the lens sits at l = −d. A <b>slope</b> u is the tangent of the ray’s angle U to the axis, <code>u = tan U</code> (rising-to-the-right positive): a dimensionless rise per millimetre — never degrees — related to distances by u = −y/l, which is why tab 3 launches each ray with u = y/d. Paraxial optics is the small-angle (first-order) limit, where tan U ≈ U in radians — the sliders stop at |u| = 0.3 (≈ 17°) just to keep the pictures readable. <b>Curvature</b> C &gt; 0 means the centre of curvature lies to the right of the surface (convex toward the incoming light); Eq 4.4 then decides the power — note the glass→air preset in tab 1: the <em>same</em> C gives negative φ when n &gt; n′. With these signs a positive power φ &gt; 0 in <code>n′u′ = nu − yφ</code> always bends rays <em>toward</em> the axis, whatever the sign of y.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id);
+  const DPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+  function fit(cv){
+    const h=cv._logicalH || (cv._logicalH=parseInt(cv.getAttribute("height"),10)||380);
+    const w=Math.max(1, cv.clientWidth||760);
+    const bw=Math.round(w*DPR), bh=Math.round(h*DPR);
+    if(cv.width!==bw) cv.width=bw;
+    if(cv.height!==bh){cv.height=bh; cv.style.height=h+"px";}
+    const g=cv.getContext("2d"); g.setTransform(DPR,0,0,DPR,0,0); cv._w=w; cv._h=h; return {g,w,h};
+  }
+  const setTxt=(id,t)=>{const e=$(id);if(e)e.textContent=t;};
+  function line(g,a,b,c,wd,dash){g.strokeStyle=c;g.lineWidth=wd||1;g.setLineDash(dash||[]);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.setLineDash([]);}
+  function head(g,px,py,ang,c,size){g.fillStyle=c;g.beginPath();g.moveTo(px,py);g.lineTo(px-size*Math.cos(ang-0.42),py-size*Math.sin(ang-0.42));g.lineTo(px-size*Math.cos(ang+0.42),py-size*Math.sin(ang+0.42));g.closePath();g.fill();}
+  function rayA(g,a,b,c,wd,fr,size){line(g,a,b,c,wd);const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);const f=(fr==null?0.6:fr);head(g,a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,ang,c,size||10);}
+  function axisArrow(g,a,b){line(g,a,b,"#6b7480",1,[6,5]);const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);head(g,b[0],b[1],ang,"#6b7480",7);}
+  function dot(g,p,r,c){g.fillStyle=c;g.beginPath();g.arc(p[0],p[1],r,0,7);g.fill();}
+  function label(g,p,t,c,fs,align){g.fillStyle=c;g.font=(fs||13)+"px sans-serif";g.textAlign=align||"left";g.fillText(t,p[0],p[1]);g.textAlign="left";}
+
+  // ---- accessible tabs (roving tabindex, activate on focus/click) ----
+  const TABS=["tab-bend","tab-trace","tab-image"], PANELS=["panel-bend","panel-trace","panel-image"];
+  const DRAWS={ "tab-bend":()=>drawBend(), "tab-trace":()=>drawTrace(), "tab-image":()=>drawImg() };
+  function selectTab(id){
+    TABS.forEach((tid,i)=>{
+      const t=$(tid), on=(tid===id);
+      t.classList.toggle("on",on);
+      t.setAttribute("aria-selected",on?"true":"false");
+      t.tabIndex=on?0:-1;
+      $(PANELS[i]).style.display=on?"":"none";
+    });
+    DRAWS[id]();
+  }
+  TABS.forEach(tid=>{
+    const t=$(tid);
+    t.addEventListener("click",()=>selectTab(tid));
+    t.addEventListener("keydown",e=>{
+      const i=TABS.indexOf(tid);
+      let j=null;
+      if(e.key==="ArrowRight"||e.key==="ArrowDown")j=(i+1)%TABS.length;
+      else if(e.key==="ArrowLeft"||e.key==="ArrowUp")j=(i+TABS.length-1)%TABS.length;
+      else if(e.key==="Home")j=0; else if(e.key==="End")j=TABS.length-1;
+      if(j!=null){e.preventDefault();$(TABS[j]).focus();selectTab(TABS[j]);}
+    });
+  });
+
+  // ---- control registry: slider + number kept in sync, clamped ----
+  const CTL={};
+  function control(sId,nId,obj,key,draw){
+    const s=$(sId), n=$(nId), mn=parseFloat(s.min), mx=parseFloat(s.max);
+    const clamp=v=>Math.min(mx,Math.max(mn,v));
+    CTL[key+"@"+sId]={set(v){obj[key]=clamp(v);s.value=obj[key];n.value=obj[key];}};
+    s.addEventListener("input",()=>{const v=parseFloat(s.value);obj[key]=v;n.value=v;draw();});
+    n.addEventListener("input",()=>{let v=parseFloat(n.value);if(isNaN(v))return;obj[key]=clamp(v);s.value=obj[key];draw();});
+    n.addEventListener("change",()=>{let v=parseFloat(n.value);if(isNaN(v))v=obj[key];obj[key]=clamp(v);s.value=obj[key];n.value=obj[key];draw();});
+    n.addEventListener("blur",()=>{n.value=obj[key];});
+  }
+  function setCtl(sId,key,v){const c=CTL[key+"@"+sId];if(c)c.set(v);}
+
+  // ---- drag helper: a 44px handle overlay carries the gesture (touch-action:none
+  //      lives only on the handle, so the rest of the canvas scrolls the page) ----
+  function dragBind(hd,cv,start,move){
+    const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+    hd.addEventListener("pointerdown",e=>{hd.setPointerCapture(e.pointerId);hd._drag=start(pt(e));e.preventDefault();});
+    hd.addEventListener("pointermove",e=>{if(hd._drag)move(pt(e),hd._drag);});
+    const end=()=>{hd._drag=null;};
+    hd.addEventListener("pointerup",end); hd.addEventListener("pointercancel",end);
+  }
+  function placeHandle(id,p){const hd=$(id);hd.style.left=p[0]+"px";hd.style.top=p[1]+"px";}
+
+  // ===== PANEL 1 : bending at one surface (fixed frame) =====
+  const B={y:18,u:0,C:0.004,n:1.0,np:1.5};
+  const W1={xmin:-95,xmax:150,ymax:58};
+  function map1(w,h){const m=16,S=Math.min((w-2*m)/(W1.xmax-W1.xmin),(h-2*m)/(2*W1.ymax));
+    const ox=m+(0-W1.xmin)*S, ay=h/2; return{S,ox,ay,to:(x,y)=>[ox+x*S,ay-y*S]};}
+  function drawBend(){
+    const cv=$("c1"),{g,w,h}=fit(cv),M=map1(w,h);
+    g.clearRect(0,0,w,h);
+    const phi=(B.np-B.n)*B.C, up=(B.n*B.u-B.y*phi)/B.np;
+    axisArrow(g,M.to(W1.xmin,0),M.to(W1.xmax,0));
+    // ghost of the real curved surface this plane stands in for (sag ×2, exaggerated)
+    if(Math.abs(B.C)>2e-4){
+      g.strokeStyle="rgba(109,224,192,.45)";g.lineWidth=1.5;g.setLineDash([5,4]);g.beginPath();
+      for(let yy=-48;yy<=48;yy+=3){const x=2*B.C*yy*yy/2;const p=M.to(x,yy);
+        yy===-48?g.moveTo(p[0],p[1]):g.lineTo(p[0],p[1]);}
+      g.stroke();g.setLineDash([]);
+    }
+    line(g,M.to(0,W1.ymax),M.to(0,-W1.ymax),"#6de0c0",2.5);
+    label(g,[M.to(0,W1.ymax)[0]+8,M.to(0,W1.ymax)[1]+16],"φ","#6de0c0",14);
+    const pPlane=M.to(0,B.y);
+    const pIn=M.to(W1.xmin, B.y - B.u*(0-W1.xmin));
+    const pR=M.to(W1.xmax, B.y+up*W1.xmax);
+    line(g,pPlane,M.to(W1.xmax,B.y+B.u*W1.xmax),"#6b7480",1.4,[4,5]);
+    rayA(g,pIn,pPlane,"#4a9de8",3,0.55,11);
+    rayA(g,pPlane,pR,"#e0a33c",3,0.62,11);
+    line(g,M.to(0,0),pPlane,"#6b7480",1,[3,4]);
+    dot(g,pPlane,7,"#4a9de8");
+    placeHandle("h1",pPlane);
+    label(g,[pPlane[0]-12,pPlane[1]+(B.y>=0?-10:20)],"y = "+B.y.toFixed(1)+" mm","#9aa4b0",13,"right");
+    // where the slope comes from: u = tan U = Δy/Δx (rise over run along the ray)
+    if(Math.abs(B.u)>0.012){
+      const x1=-80,x2=-46, yA=B.y+B.u*x1, yB=B.y+B.u*x2;
+      if(Math.abs(yA)<52&&Math.abs(yB)<52){
+        const P1=M.to(x1,yA),P2=M.to(x2,yA),P3=M.to(x2,yB);
+        line(g,P1,P2,"#6b7480",1,[3,3]);
+        line(g,P2,P3,"#6b7480",1,[3,3]);
+        label(g,[(P1[0]+P2[0])/2-8,P1[1]+(B.u>0?15:-7)],"Δx","#6b7480",12);
+        label(g,[P3[0]+6,(P2[1]+P3[1])/2+4],"Δy","#6b7480",12);
+        const U=Math.atan(B.u);
+        g.strokeStyle="#4a9de8";g.lineWidth=1.2;g.beginPath();
+        g.arc(P1[0],P1[1],24,Math.min(0,-U),Math.max(0,-U));g.stroke();
+        label(g,[P1[0]+28,P1[1]+(B.u>0?-8:16)],"U","#4a9de8",13);
+        label(g,[P1[0]-4,P1[1]+(B.u>0?30:-22)],"u = tan U = Δy/Δx = "+B.u.toFixed(3),"#9aa4b0",12);
+      }
+    }
+    if(Math.abs(up)>0.012){ // exit angle U′ against an axis-parallel reference
+      line(g,pPlane,[pPlane[0]+44,pPlane[1]],"#6b7480",1,[3,3]);
+      const U2=Math.atan(up);
+      g.strokeStyle="#e0a33c";g.lineWidth=1.2;g.beginPath();
+      g.arc(pPlane[0],pPlane[1],34,Math.min(0,-U2),Math.max(0,-U2));g.stroke();
+      label(g,[pPlane[0]+40,pPlane[1]+(up>0?-12:20)],"U′","#e0a33c",13);
+      label(g,[pPlane[0]+50,pPlane[1]+(up>0?-28:36)],"u′ = tan U′ = "+up.toFixed(4),"#9aa4b0",12);
+    }
+    const R=B.C!==0?1/B.C:Infinity, dnu=-B.y*phi, bend=up-B.u;
+    setTxt("r_np",B.np.toFixed(2));setTxt("r_n",B.n.toFixed(2));setTxt("r_C",B.C.toFixed(4));
+    setTxt("r_phi",phi.toFixed(5));setTxt("r_R",isFinite(R)?R.toFixed(0):"∞");
+    setTxt("r_n2",B.n.toFixed(2));setTxt("r_u",B.u.toFixed(3));setTxt("r_y",B.y.toFixed(1));
+    setTxt("r_phi2",phi.toFixed(5));setTxt("r_nu",(B.np*up).toFixed(4));
+    setTxt("r_dnu",dnu.toFixed(4));setTxt("r_up",up.toFixed(4));setTxt("r_bend",bend.toFixed(4));
+    $("r_note").style.display=(Math.abs(bend-dnu)>1e-4)?"":"none";
+    const st=$("r_state"),msg=$("r_msg");
+    const snell=(Math.abs(B.n-B.np)>1e-9&&Math.abs(B.u)>1e-4)
+      ? " But the index still changes, so the slope refracts at the flat interface: u′ = n·u/n′ = "+up.toFixed(4)+" (Snell — the swimming-pool effect)."
+      : " The ray goes perfectly straight.";
+    if(Math.abs(phi)<1e-9){
+      st.className="pill flat";st.textContent="no power";
+      const cause=Math.abs(B.C)<1e-9?"Flat plane (C = 0)":"Curved but index-matched (n′ = n) — the surface is optically invisible";
+      msg.textContent=cause+": no power-bend, n′·u′ = n·u is conserved."+snell;
+    }else if(Math.abs(B.y)<0.25){
+      st.className="pill flat";st.textContent="through vertex";
+      msg.textContent="Through the vertex (y = 0): the power-bend y·φ is zero — power cannot touch this ray."+snell;
+    }else if(phi>0){
+      st.className="pill conv";st.textContent="toward axis";
+      msg.textContent="Positive power (φ > 0) always bends rays toward the axis: Δ(n·u) = −y·φ has the opposite sign to y. Taller rays bend more.";
+    }else{
+      st.className="pill div";st.textContent="away from axis";
+      msg.textContent="Negative power (φ < 0) bends rays away from the axis — it diverges light.";
+    }
+    const ok=Math.abs(up)<0.001&&Math.abs(phi)>1e-6&&Math.abs(B.y*phi)>1e-3;
+    $("chal1").classList.toggle("ok",ok);
+    setTxt("chal1st",ok?"✓ solved — n·u = y·φ exactly cancels the slope!":"not solved yet");
+  }
+  control("s_y","n_y",B,"y",drawBend);control("s_u","n_u",B,"u",drawBend);control("s_C","n_C",B,"C",drawBend);
+  control("s_n","n_n",B,"n",drawBend);control("s_np","n_np",B,"np",drawBend);
+  dragBind($("h1"),$("c1"),
+    p=>({}),
+    p=>{const M=map1($("c1")._w||$("c1").clientWidth,$("c1")._h||380);
+      const y=Math.max(-42,Math.min(42,Math.round(((M.ay-p[1])/M.S)*2)/2));
+      setCtl("s_y","y",y);drawBend();});
+
+  // ===== PANEL 2 : two surfaces, bend → transfer → bend (step-through) =====
+  const T={y0:18,p1:0.01,p2:0.01,t:40,n:1,step:0};
+  function traceCalc(){
+    const u1p=(0-T.y0*T.p1)/T.n;             // Eq 4.1 at S1: air -> gap of index n
+    const y2=T.y0+u1p*T.t;                   // Eq 4.2 across the gap
+    const u2p=T.n*u1p-y2*T.p2;               // Eq 4.1 at S2: gap -> air
+    const bfd=Math.abs(u2p)>1e-9?-y2/u2p:Infinity;   // Eq 4.2 to the axis
+    const efl=Math.abs(u2p)>1e-9?-T.y0/u2p:Infinity;
+    const phiT=T.p1+T.p2-(T.t/T.n)*T.p1*T.p2;        // Eq 4.18
+    return {u1p,y2,u2p,bfd,efl,phiT};
+  }
+  function drawTrace(){
+    const cv=$("c3"),{g,w,h}=fit(cv);
+    g.clearRect(0,0,w,h);
+    const {u1p,y2,u2p,bfd,efl,phiT}=traceCalc();
+    const s=T.step;
+    const focusable=isFinite(bfd)&&bfd>=0;
+    const xEnd=T.t+(focusable?Math.min(bfd*1.12+8,420):60);
+    let xmin=-45;
+    if(s>=4&&isFinite(bfd)&&bfd<0) xmin=Math.min(-45,Math.max(T.t+bfd-15,-280));
+    const xmax=Math.max(xEnd,T.t+40), yext=Math.max(Math.abs(T.y0),Math.abs(y2),12)*1.3;
+    const m=18,S=Math.min((w-2*m)/(xmax-xmin),(h-2*m)/(2*yext));
+    const ox=m-xmin*S, ay=h/2, to=(x,y)=>[ox+x*S,ay-y*S];
+    axisArrow(g,to(xmin,0),to(xmax,0));
+    // planes
+    line(g,to(0,yext*0.94),to(0,-yext*0.94),"#6de0c0",2.5);
+    label(g,[to(0,yext*0.94)[0]+6,to(0,yext*0.94)[1]+15],"φ₁","#6de0c0",13);
+    if(T.t>1e-9){line(g,to(T.t,yext*0.94),to(T.t,-yext*0.94),"#6de0c0",2.5);
+      label(g,[to(T.t,yext*0.94)[0]+6,to(T.t,yext*0.94)[1]+15],"φ₂","#6de0c0",13);}
+    else label(g,[to(0,yext*0.94)[0]+6,to(0,yext*0.94)[1]+31],"+φ₂ (t = 0)","#6de0c0",12);
+    // input ray
+    rayA(g,to(xmin,T.y0),to(0,T.y0),"#4a9de8",3,0.5,10);
+    dot(g,to(0,T.y0),5,"#4a9de8");
+    if(s>=1&&s<2){ // short stub with the new slope after S1
+      const Ls=Math.min(Math.max(T.t*0.45,12),26);
+      rayA(g,to(0,T.y0),to(Ls,T.y0+u1p*Ls),"#e0a33c",3,0.7,10);
+    }
+    if(s>=2){ // full flight to S2
+      rayA(g,to(0,T.y0),to(T.t,y2),"#e0a33c",3,0.55,10);
+      dot(g,to(T.t,y2),5,"#e0a33c");
+      label(g,[to(T.t,y2)[0]+8,to(T.t,y2)[1]-8],"y₂ = "+y2.toFixed(1),"#9aa4b0",12);
+    }
+    if(s>=3&&s<4){const Ls=26;rayA(g,to(T.t,y2),to(T.t+Ls,y2+u2p*Ls),"#5ec06a",3,0.7,10);}
+    if(s>=4){
+      if(focusable){
+        const fx=T.t+bfd, xcap=T.t+412;
+        if(fx<=xcap){
+          rayA(g,to(T.t,y2),to(fx,0),"#5ec06a",3,0.6,10);
+          line(g,to(fx,yext*0.7),to(fx,-yext*0.7),"#5ec06a",1.1);
+          dot(g,to(fx,0),6,"#5ec06a");
+          label(g,[to(fx,0)[0],to(fx,0)[1]-12],"F′  (BFD = "+bfd.toFixed(1)+" mm)","#5ec06a",13,"center");
+        }else{
+          rayA(g,to(T.t,y2),to(xcap,y2+u2p*(xcap-T.t)),"#5ec06a",3,0.6,10);
+          label(g,[to(xcap,0)[0]-6,to(xcap,0)[1]-12],"F′ far →  (BFD = "+bfd.toFixed(0)+" mm)","#5ec06a",13,"right");
+        }
+        if(Math.abs(bfd-efl)>1){ // thick lens: EFL is measured from H′, not from S2
+          const hx=T.t+bfd-efl;
+          line(g,to(hx,yext*0.55),to(hx,-yext*0.55),"#9aa4b0",1.1,[5,4]);
+          label(g,[to(hx,yext*0.55)[0]+4,to(hx,yext*0.55)[1]+12],"H′","#9aa4b0",12);
+        }
+      }else if(isFinite(bfd)){ // exit ray diverges: virtual F′ by back-extension
+        const Lf=60;rayA(g,to(T.t,y2),to(T.t+Lf,y2+u2p*Lf),"#5ec06a",3,0.6,10);
+        const vx=T.t+bfd, vlim=xmin+8;
+        if(vx>=vlim){
+          line(g,to(T.t,y2),to(vx,0),"#e0a33c",1.2,[4,4]);
+          dot(g,to(vx,0),5,"#e0a33c");
+          label(g,[to(vx,0)[0],to(vx,0)[1]-10],"virtual F′","#e0a33c",12,"center");
+        }else{
+          const yv=y2+u2p*(vlim-T.t);
+          line(g,to(T.t,y2),to(vlim,yv),"#e0a33c",1.2,[4,4]);
+          label(g,[to(vlim,yv)[0]+4,to(vlim,yv)[1]-8],"virtual F′ (far ←)","#e0a33c",12);
+        }
+      }else{ // u2' = 0: exits parallel
+        const Lf=xmax-T.t;rayA(g,to(T.t,y2),to(T.t+Lf,y2),"#5ec06a",3,0.6,10);
+      }
+    }
+    // readout & table
+    const F=v=>v.toFixed(3);
+    setTxt("t_stepno","step "+s+" of 4");
+    $("t_prev").disabled=(s===0); $("t_next").disabled=(s===4);
+    $("t_eq1").classList.toggle("lit",s===1||s===3);
+    $("t_eq2").classList.toggle("lit",s===2||s===4);
+    const calc=$("t_calc"), msg=$("t_msg");
+    const rows=[["input (u₀ = 0)",T.y0.toFixed(1),"0.000"]];
+    if(s>=1)rows.push(["bend at S₁ (4.1)",T.y0.toFixed(1),F(u1p)]);
+    if(s>=2)rows.push(["fly the gap (4.2)",y2.toFixed(1),F(u1p)]);
+    if(s>=3)rows.push(["bend at S₂ (4.1)",y2.toFixed(1),F(u2p)]);
+    if(s>=4)rows.push([isFinite(bfd)?(bfd>=0?"fly to the axis (4.2)":"extend back to the axis (4.2)"):(Math.abs(T.y0)<0.5?"axial ray — no bend":"— afocal —"),isFinite(bfd)?"0.0":y2.toFixed(1),F(u2p)]);
+    $("t_rows").innerHTML=rows.map(r=>"<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td>"+r[2]+"</td></tr>").join("");
+    let m4;
+    if(!isFinite(bfd)) m4=Math.abs(T.y0)<0.5
+      ? "y₀ = 0: the axial ray goes straight through whatever the powers are — it carries no focal information. Pick y₀ ≠ 0 to probe the system."
+      : "u₂′ = 0: the ray leaves parallel — AFOCAL (you built a telescope). No focus; EFL = ∞. Check (4.18): φ₁+φ₂−(t/n)·φ₁φ₂ = "+phiT.toFixed(5)+".";
+    else if(bfd>=0){
+      m4="Eq 4.2 one last time, to y = 0: BFD = −y₂/u₂′ = "+bfd.toFixed(1)+" mm; EFL = −y₀/u₂′ = "+efl.toFixed(1)+" mm — and Eq 4.18 agrees: φ₁+φ₂−(t/n)·φ₁φ₂ = "+phiT.toFixed(5)+" = 1/"+(1/phiT).toFixed(1)+". Two equations really do it all.";
+      if(Math.abs(bfd-efl)>1) m4+=" And BFD ≠ EFL: the focal length is measured from the principal plane H′ (grey dashed), which sits "+(bfd-efl).toFixed(1)+" mm from S₂"+(T.n>1.001&&T.t+bfd-efl<T.t?" — inside the glass":"")+".";
+    }
+    else m4="The exit ray DIVERGES, so extend it backwards to the axis (dashed): BFD = −y₂/u₂′ = "+bfd.toFixed(1)+" mm — negative, so F′ is virtual, on the left. EFL = "+efl.toFixed(1)+" mm; Eq 4.18: φ₁+φ₂−(t/n)·φ₁φ₂ = "+phiT.toFixed(5)+".";
+    const msgs=[
+      "A collimated ray enters at height y₀. Step through the trace — bend, fly, bend, fly.",
+      "Eq 4.1 at surface 1 can only change the SLOPE (never the height): u₁′ = (u₀ − y₀·φ₁)/n = "+F(u1p)+(T.n>1.001?" — inside the glass the ray flies flatter by the factor n.":"."),
+      T.t>1e-9?"Eq 4.2 across the gap can only change the HEIGHT (never the slope): y₂ = y₁ + u₁′·t = "+y2.toFixed(1)+" mm."
+             :"t = 0: no flight, no height change — y₂ = y₀. The two planes act as ONE surface.",
+      "Eq 4.1 again at surface 2 — back into air, using the NEW height y₂: u₂′ = n·u₁′ − y₂·φ₂ = "+F(u2p)+".",
+      m4
+    ];
+    msg.textContent=msgs[s];
+    const calcs=[
+      "Press “Next step” to walk the ray through both surfaces.",
+      "u₁′ = (u₀ − y₁·φ₁)/n = (0 − ("+T.y0.toFixed(1)+")("+T.p1.toFixed(3)+"))/"+T.n.toFixed(2)+" = "+F(u1p),
+      "y₂ = y₁ + u₁′·t = "+T.y0.toFixed(1)+" + ("+F(u1p)+")("+T.t.toFixed(0)+") = "+y2.toFixed(1)+" mm",
+      "u₂′ = n·u₁′ − y₂·φ₂ = ("+T.n.toFixed(2)+")("+F(u1p)+") − ("+y2.toFixed(1)+")("+T.p2.toFixed(3)+") = "+F(u2p),
+      isFinite(bfd)?"0 = y₂ + u₂′·BFD ⇒ BFD = −y₂/u₂′ = "+bfd.toFixed(1)+" mm,  EFL = −y₀/u₂′ = "+efl.toFixed(1)+" mm"
+                   :"u₂′ = 0 ⇒ the exit ray never crosses the axis."
+    ];
+    calc.textContent=calcs[s];
+  }
+  control("s_y0","n_y0",T,"y0",drawTrace);control("s_p1","n_p1",T,"p1",drawTrace);
+  control("s_p2","n_p2",T,"p2",drawTrace);control("s_t","n_t",T,"t",drawTrace);
+  control("s_tn","n_tn",T,"n",drawTrace);
+  $("t_next").addEventListener("click",()=>{if(T.step<4){T.step++;drawTrace();}});
+  $("t_prev").addEventListener("click",()=>{if(T.step>0){T.step--;drawTrace();}});
+
+  // ===== PANEL 3 : imaging (thin lens in air) — auto-fit frame =====
+  const I={d:150,f:60,A:32,N:7,Y:24};
+  function drawImg(){
+    const cv=$("c2"),{g,w,h}=fit(cv);
+    g.clearRect(0,0,w,h);
+    const phi=1/I.f, denom=(1/I.f-1/I.d), lp=Math.abs(denom)<1e-7?Infinity:1/denom;
+    const objX=-I.d, N=Math.round(I.N), A=I.A;
+    const Yc=Math.max(-A,Math.min(A,I.Y));
+    if(Math.abs(I.Y-Yc)>1e-9) setCtl("s_Y","Y",Yc);   // keep the Y control honest when the aperture shrinks
+    const capX=Math.max(3*(I.d+I.f), 400);
+    const drawImgX = (isFinite(lp)&&lp>0)? Math.min(lp,capX) : null;
+    const rightExt = drawImgX!=null ? drawImgX : Math.max(I.d*0.9,150);
+    const segs=[];
+    const fan=[];
+    for(let k=0;k<N;k++) fan.push((N===1)?0:(-A+2*A*k/(N-1)));
+    fan.forEach(yk=>{
+      if(Math.abs(yk)<1e-6){ segs.push({a:[objX,0],b:[rightExt,0],c:"#4a9de8",fr:0.5,wd:2}); return; }
+      const uin=yk/I.d, up=uin-yk*phi;
+      segs.push({a:[objX,0],b:[0,yk],c:"#4a9de8",fr:0.55,wd:2});
+      if(drawImgX!=null){ segs.push({a:[0,yk],b:[drawImgX, yk+up*drawImgX],c:"#e0a33c",fr:0.62,wd:2}); }
+      else { segs.push({a:[0,yk],b:[rightExt, yk+up*rightExt],c:"#e0a33c",fr:0.6,wd:2});
+             if(isFinite(lp)&&lp<0) segs.push({a:[0,yk],b:[lp, yk+up*lp],c:"#6b7480",dash:true}); }
+    });
+    // "your ray" (violet, on top)
+    const uY=Yc/I.d, uYp=uY-Yc*phi;
+    if(Math.abs(Yc)>0.5){
+      segs.push({a:[objX,0],b:[0,Yc],c:"#c792ea",fr:0.5,wd:3});
+      const endX=drawImgX!=null?drawImgX:rightExt;
+      segs.push({a:[0,Yc],b:[endX,Yc+uYp*endX],c:"#c792ea",fr:0.65,wd:3});
+      if(drawImgX==null&&isFinite(lp)&&lp<0) segs.push({a:[0,Yc],b:[lp,Yc+uYp*lp],c:"#c792ea",dash:true});
+    }
+    let xmin=Math.min(objX,0), xmax=Math.max(0,rightExt), yext=A;
+    const grow=(x,y)=>{if(x<xmin)xmin=x;if(x>xmax)xmax=x;if(Math.abs(y)>yext)yext=Math.abs(y);};
+    segs.forEach(sg=>{grow(sg.a[0],sg.a[1]);grow(sg.b[0],sg.b[1]);});
+    const vCap=-(2*I.d+150);   // frame cap for far virtual images (d→f from below sends l′→−∞)
+    if(isFinite(lp)&&lp<0) grow(Math.max(lp,vCap),0);
+    yext*=1.18;
+    const xpad=(xmax-xmin)*0.06+8; xmin-=xpad; xmax+=xpad;
+    const m=18, S=Math.min((w-2*m)/(xmax-xmin),(h-2*m)/(2*yext));
+    const ox=(w-(xmax+xmin)*S)/2, ay=h/2;
+    const to=(x,y)=>[ox+x*S, ay-y*S];
+    axisArrow(g,to(xmin,0),to(xmax,0));
+    line(g,to(0,yext*0.96),to(0,-yext*0.96),"#6de0c0",2.5);
+    label(g,[to(0,yext*0.96)[0]+8,to(0,yext*0.96)[1]+16],"φ=1/f","#6de0c0",13);
+    segs.forEach(sg=>{ if(sg.dash) line(g,to(sg.a[0],sg.a[1]),to(sg.b[0],sg.b[1]),sg.c,1.2,[4,4]);
+      else rayA(g,to(sg.a[0],sg.a[1]),to(sg.b[0],sg.b[1]),sg.c,sg.wd||2,sg.fr,9); });
+    if(Math.abs(Yc)>0.5) dot(g,to(0,Yc),5,"#c792ea");
+    const objP=to(objX,0); dot(g,objP,7,"#e8ebef"); placeHandle("h2",objP);
+    label(g,[objP[0],objP[1]+20],"object","#9aa4b0",13,"center");
+    if(isFinite(lp)&&lp>0){const ip=to(drawImgX,0); line(g,to(drawImgX,yext*0.8),to(drawImgX,-yext*0.8),"#5ec06a",1.2);
+      dot(g,ip,6,"#5ec06a"); label(g,[ip[0],ip[1]-12], lp<=capX?"image":"image (far →)","#5ec06a",13,"center");}
+    else if(isFinite(lp)&&lp<0){
+      if(lp>=vCap){const ip=to(lp,0); dot(g,ip,5,"#e0a33c");
+        line(g,to(lp,yext*0.7),to(lp,-yext*0.7),"#e0a33c",1.1,[4,4]); label(g,[ip[0],ip[1]-12],"virtual","#e0a33c",13,"center");}
+      else label(g,[to(vCap,0)[0]+6,to(vCap,0)[1]-12],"virtual (far ←)","#e0a33c",13);
+    }
+    cv._map={ox,S,objP};
+    setTxt("i_phi",phi.toFixed(5));
+    // your-ray readout (PRTE route to the image)
+    if(Math.abs(Yc)>0.5){
+      setTxt("i_u",uY.toFixed(3));setTxt("i_up",uYp.toFixed(4));
+      setTxt("i_lpY",Math.abs(uYp)<1e-9?"∞ (parallel)":( -Yc/uYp ).toFixed(1)+" mm");
+    }else{
+      setTxt("i_u","—");setTxt("i_up","—");setTxt("i_lpY","pick Y ≠ 0");
+    }
+    const st=$("i_state"),msg=$("i_msg");
+    if(!isFinite(lp)){setTxt("i_lp","∞ (collimated)");st.className="pill flat";st.textContent="image at ∞";msg.textContent="Object at the front focal point (d = f): u′ = 0 for every ray — they all leave parallel, image at infinity.";}
+    else if(lp>0){setTxt("i_lp",lp.toFixed(1)+" mm");st.className="pill conv";st.textContent="real image";msg.textContent="Every ray — whatever its height — crosses the axis at the same point l′. Change Y above and watch −Y/u′ not move. That is what “imaging” means to first order.";}
+    else{setTxt("i_lp",lp.toFixed(1)+" mm (behind object)");st.className="pill div";st.textContent="virtual image";msg.textContent="Object inside the focal length (d < f): the rays diverge and only appear to come from a virtual image on the object side (dashed).";}
+    const ok=isFinite(lp)&&Math.abs(lp-2*I.f)<1;
+    $("chal2").classList.toggle("ok",ok);
+    setTxt("chal2st",ok?"✓ solved — object at 2f gives image at 2f (m = −1: same size, inverted)!":"not solved yet");
+  }
+  control("s_d","n_d",I,"d",drawImg);control("s_f","n_f",I,"f",drawImg);
+  control("s_A","n_A",I,"A",drawImg);control("s_N","n_N",I,"N",drawImg);
+  control("s_Y","n_Y",I,"Y",drawImg);
+  dragBind($("h2"),$("c2"),
+    p=>({px:p[0],d:I.d,S:$("c2")._map.S}),      // freeze the frame at gesture start
+    (p,st)=>{const d=Math.max(45,Math.min(260,Math.round(st.d-(p[0]-st.px)/st.S)));
+      setCtl("s_d","d",d);drawImg();});
+
+  // ---- presets ----
+  document.querySelectorAll("[data-p1]").forEach(b=>b.addEventListener("click",()=>{
+    const kv={y:B.y,u:B.u,C:B.C,n:B.n,np:B.np};
+    b.dataset.p1.split(",").forEach(s=>{const[k,v]=s.split(":");kv[k]=parseFloat(v);});
+    setCtl("s_y","y",kv.y);setCtl("s_u","u",kv.u);setCtl("s_C","C",kv.C);
+    setCtl("s_n","n",kv.n);setCtl("s_np","np",kv.np);
+    drawBend();
+  }));
+  document.querySelectorAll("[data-p2]").forEach(b=>b.addEventListener("click",()=>{
+    const kv={};
+    b.dataset.p2.split(",").forEach(s=>{const[k,v]=s.split(":");kv[k]=parseFloat(v);});
+    setCtl("s_y0","y0",kv.y0);setCtl("s_p1","p1",kv.p1);setCtl("s_p2","p2",kv.p2);setCtl("s_t","t",kv.t);setCtl("s_tn","n",kv.n);
+    T.step=4;               // presets show the finished trace; step back to replay
+    drawTrace();
+  }));
+  document.querySelectorAll("[data-p3]").forEach(b=>b.addEventListener("click",()=>{
+    const kind=b.dataset.p3;   // presets adjust f too, so the label is always honored
+    if(kind==="2f"){const f=Math.min(I.f,130);setCtl("s_f","f",f);setCtl("s_d","d",2*f);}
+    else if(kind==="f"){const f=Math.max(I.f,45);setCtl("s_f","f",f);setCtl("s_d","d",f);}
+    else{const f=Math.max(I.f,60);setCtl("s_f","f",f);setCtl("s_d","d",Math.round(0.75*f));}
+    drawImg();
+  }));
+
+  window.addEventListener("resize",()=>{
+    if($("panel-bend").style.display!=="none")drawBend();
+    else if($("panel-trace").style.display!=="none")drawTrace();
+    else drawImg();
+  });
+  drawBend();
+})();
+</script>
+</body>
+</html>
