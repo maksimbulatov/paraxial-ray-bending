@@ -6,10 +6,11 @@ A single-page, interactive explainer of how **paraxial ray bending** works, buil
 - **transfer:** `y′ = y + u′·t`
 - **power:** `φ = (n′ − n)·C`,  `C = 1/R`
 
-Three interactive demos:
+Four interactive demos:
 1. **Bending at one surface** — drag the ray or type values; watch a ray refract and see the equation update live, in reduced-slope (n·u) language. Presets for the vertex ray, the flat plane, negative power, and glass→air; plus a "make the ray leave parallel" challenge.
 2. **Bend → transfer → bend** — step through a two-surface trace by hand: bend, fly the gap, bend, fly to the axis. The gap has an adjustable index n, so with n > 1 it is a real **thick lens**: BFD ≠ EFL, the principal plane H′ appears on the plot, and the result is checked against Eq 4.18 (1/EFL = φ₁ + φ₂ − (t/n)·φ₁φ₂). Presets: thin lens (t = 0: powers add), thick lens (n = 1.5), afocal telescope.
 3. **Why all rays meet at one image** — a fan of rays from an on-axis object through a thin lens. Pick "your ray" height Y and watch the PRTE crossing −Y/u′ stay put for every Y; the Gaussian formula is then *derived* by cancelling Y, not decreed.
+4. **Paraxial vs real rays** — the same lens traced twice: dashed paraxial rays (bend at flat vertex planes, one perfect focus) against solid real rays (exact `n·sin I = n′·sin I′` at the true spherical surfaces). The gap is **spherical aberration**, measured live as LSA; presets show a slow lens (real ≈ paraxial), a fast lens, and the classic plano-convex orientation lesson — flip the lens and the aberration roughly quadruples. Includes total-internal-reflection detection, because the real world says no.
 
 Accessible: keyboard-operable ARIA tabs, labelled sliders, live-region readouts, WCAG-AA colors, touch-friendly drag handles that don't trap page scrolling, print stylesheet.
 

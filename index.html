@@ -114,6 +114,7 @@
     <button class="tab on" id="tab-bend"  role="tab" aria-selected="true"  aria-controls="panel-bend">1 · Bending at one surface</button>
     <button class="tab" id="tab-trace" role="tab" aria-selected="false" aria-controls="panel-trace" tabindex="-1">2 · Bend → transfer → bend</button>
     <button class="tab" id="tab-image" role="tab" aria-selected="false" aria-controls="panel-image" tabindex="-1">3 · Why all rays meet at one image</button>
+    <button class="tab" id="tab-real" role="tab" aria-selected="false" aria-controls="panel-real" tabindex="-1">4 · Paraxial vs real rays</button>
   </div>
 
   <!-- PANEL 1 : one surface -->
@@ -234,6 +235,40 @@
     <p class="chal" id="chal2"><b>Try it:</b> place the object so the image lands exactly at 2f behind the lens. <span class="st" id="chal2st">not solved yet</span></p>
   </div>
 
+  <!-- PANEL 4 : paraxial vs real rays -->
+  <div class="stage" id="panel-real" role="tabpanel" aria-labelledby="tab-real" tabindex="0" style="display:none">
+    <p class="goal"><b>Goal:</b> see what the paraxial world leaves out. Real rays obey Snell’s law <code>n·sin I = n′·sin I′</code> at the true curved glass; paraxial rays keep only the first order (sin I ≈ I) and bend at flat vertex planes. The gap between the two is <b>aberration</b>.</p>
+    <canvas id="c4" height="380" role="img" aria-label="Diagram: a fan of parallel rays passes through a real lens. Dashed paraxial rays meet at one focus; solid real rays traced with Snell's law cross the axis at different points, showing spherical aberration."></canvas>
+    <div class="legend">
+      <span><i style="background:#4a9de8"></i>paraxial rays (dashed — bend at the vertex planes)</span>
+      <span><i style="background:#e0a33c"></i>real rays (Snell at the curved glass)</span>
+      <span><i style="background:#6de0c0"></i>the actual lens</span>
+      <span><i style="background:#5ec06a"></i>paraxial focus F′</span>
+    </div>
+    <div class="chips">
+      <span class="cap">Presets:</span>
+      <button class="chip" data-p4="C1:0.004,C2:-0.004,t:6,n:1.5,A:8,N:7">slow lens — real ≈ paraxial</button>
+      <button class="chip" data-p4="C1:0.02,C2:-0.02,t:10,n:1.5,A:16,N:7">fast lens — big aberration</button>
+      <button class="chip" data-p4="C1:0.02,C2:0,t:10,n:1.5,A:14,N:7">plano-convex, curved side first</button>
+      <button class="chip" data-p4="C1:0,C2:-0.02,t:10,n:1.5,A:14,N:7">flipped — flat side first (worse!)</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label for="n_C1">Curvature&nbsp; C₁ <span class="val"><input class="num" id="n_C1" type="number" min="-0.025" max="0.025" step="0.0005" value="0.02"><em>/mm</em></span></label><input id="s_C1" type="range" min="-0.025" max="0.025" step="0.0005" value="0.02" aria-label="Curvature of the front surface in inverse millimetres"></div>
+      <div class="ctrl"><label for="n_C2">Curvature&nbsp; C₂ <span class="val"><input class="num" id="n_C2" type="number" min="-0.025" max="0.025" step="0.0005" value="-0.02"><em>/mm</em></span></label><input id="s_C2" type="range" min="-0.025" max="0.025" step="0.0005" value="-0.02" aria-label="Curvature of the back surface in inverse millimetres"></div>
+      <div class="ctrl"><label for="n_rt">Thickness&nbsp; t <span class="val"><input class="num" id="n_rt" type="number" min="2" max="20" step="1" value="10"><em>mm</em></span></label><input id="s_rt" type="range" min="2" max="20" step="1" value="10" aria-label="Lens centre thickness in millimetres"></div>
+      <div class="ctrl"><label for="n_rn">Index&nbsp; n <span class="val"><input class="num" id="n_rn" type="number" min="1.3" max="1.9" step="0.01" value="1.5"></span></label><input id="s_rn" type="range" min="1.3" max="1.9" step="0.01" value="1.5" aria-label="Refractive index of the lens glass"></div>
+      <div class="ctrl"><label for="n_rA">Aperture&nbsp; A <span class="val"><input class="num" id="n_rA" type="number" min="2" max="20" step="1" value="16"><em>mm</em></span></label><input id="s_rA" type="range" min="2" max="20" step="1" value="16" aria-label="Ray fan half-height in millimetres"></div>
+      <div class="ctrl"><label for="n_rN">Number of rays <span class="val"><input class="num" id="n_rN" type="number" min="3" max="9" step="2" value="7"></span></label><input id="s_rN" type="range" min="3" max="9" step="2" value="7" aria-label="Number of rays in the fan"></div>
+    </div>
+    <div class="readout eqbox" style="margin-top:16px" aria-live="polite">
+      <span class="dim">paraxial (4.1/4.2 at the vertex planes):</span>&nbsp; φ₁ = <span id="rl_p1">0.01000</span>, φ₂ = <span id="rl_p2">0.01000</span> /mm;&nbsp; (4.18) φ = <b id="rl_phi">0.01933</b> ⇒ EFL = <b id="rl_efl">51.7</b> mm, BFD = <b id="rl_bfdp">48.3</b> mm — one focus for every ray height<br>
+      <span class="dim">real (n·sin I = n′·sin I′ at the true spheres):</span>&nbsp; marginal ray (y = ±<span id="rl_A">16</span>) crosses <b id="rl_marg">39.6</b> mm behind the lens, zonal ray (0.7·A) at <b id="rl_zon">44.4</b> mm — a different focus per height<br>
+      LSA = real(marginal) − paraxial = <b id="rl_lsa">−8.7</b> mm&nbsp; <span id="rl_state" class="pill div">spherical aberration</span>
+    </div>
+    <p class="hint" id="rl_msg" aria-live="polite">The marginal ray focuses 8.7 mm short of the paraxial focus — spherical aberration. Real rays never meet at one point.</p>
+    <p class="chal" id="chal3"><b>Try it:</b> keep the fast lens curvatures and shrink the aperture A until the marginal real ray agrees with paraxial to better than 0.5 mm — the paraxial world is the small-y limit of the real one. <span class="st" id="chal3st">not solved yet</span></p>
+  </div>
+
   <h2>Sign conventions</h2>
   <p class="note"><b>Heights</b> y are measured from the optical axis, upward positive. <b>Axial distances</b> are measured from the surface, negative to the left — so an object a distance d in front of the lens sits at l = −d. A <b>slope</b> u is the tangent of the ray’s angle U to the axis, <code>u = tan U</code> (rising-to-the-right positive): a dimensionless rise per millimetre — never degrees — related to distances by u = −y/l, which is why tab 3 launches each ray with u = y/d. Paraxial optics is the small-angle (first-order) limit, where tan U ≈ U in radians — the sliders stop at |u| = 0.3 (≈ 17°) just to keep the pictures readable. <b>Curvature</b> C &gt; 0 means the centre of curvature lies to the right of the surface (convex toward the incoming light); Eq 4.4 then decides the power — note the glass→air preset in tab 1: the <em>same</em> C gives negative φ when n &gt; n′. With these signs a positive power φ &gt; 0 in <code>n′u′ = nu − yφ</code> always bends rays <em>toward</em> the axis, whatever the sign of y.</p>
 </div>
@@ -260,8 +295,8 @@
   function label(g,p,t,c,fs,align){g.fillStyle=c;g.font=(fs||13)+"px sans-serif";g.textAlign=align||"left";g.fillText(t,p[0],p[1]);g.textAlign="left";}
 
   // ---- accessible tabs (roving tabindex, activate on focus/click) ----
-  const TABS=["tab-bend","tab-trace","tab-image"], PANELS=["panel-bend","panel-trace","panel-image"];
-  const DRAWS={ "tab-bend":()=>drawBend(), "tab-trace":()=>drawTrace(), "tab-image":()=>drawImg() };
+  const TABS=["tab-bend","tab-trace","tab-image","tab-real"], PANELS=["panel-bend","panel-trace","panel-image","panel-real"];
+  const DRAWS={ "tab-bend":()=>drawBend(), "tab-trace":()=>drawTrace(), "tab-image":()=>drawImg(), "tab-real":()=>drawReal() };
   function selectTab(id){
     TABS.forEach((tid,i)=>{
       const t=$(tid), on=(tid===id);
@@ -603,6 +638,144 @@
     (p,st)=>{const d=Math.max(45,Math.min(260,Math.round(st.d-(p[0]-st.px)/st.S)));
       setCtl("s_d","d",d);drawImg();});
 
+  // ===== PANEL 4 : paraxial vs real rays (exact Snell at the true spheres) =====
+  const RL={C1:0.02,C2:-0.02,t:10,n:1.5,A:16,N:7};
+  function sphereHit(P,D,V,C){ // ray P+sD vs surface of curvature C at vertex x=V
+    if(Math.abs(C)<1e-9){
+      if(Math.abs(D[0])<1e-12)return null;
+      const s=(V-P[0])/D[0]; if(s<=1e-9)return null;
+      return {p:[V,P[1]+s*D[1]], nrm:[-1,0]};
+    }
+    const R=1/C, O=[V+R,0];
+    const px=P[0]-O[0], py=P[1]-O[1];
+    const b=2*(D[0]*px+D[1]*py), c=px*px+py*py-R*R;
+    const disc=b*b-4*c; if(disc<0)return null;
+    const sq=Math.sqrt(disc); let best=null;
+    for(const s of [(-b-sq)/2,(-b+sq)/2]){ // ascending: first valid root is the vertex-side hemisphere
+      if(s<=1e-9)continue;
+      const x=P[0]+s*D[0];
+      if((x-O[0])*Math.sign(R)<0){best=s;break;}
+    }
+    if(best==null)return null;
+    const p=[P[0]+best*D[0],P[1]+best*D[1]];
+    return {p, nrm:[(p[0]-O[0])/R,(p[1]-O[1])/R]};
+  }
+  function snell2(D,nrm,n1,n2){ // exact vector Snell; null = total internal reflection
+    let N=nrm.slice();
+    let cosi=-(D[0]*N[0]+D[1]*N[1]);
+    if(cosi<0){N=[-N[0],-N[1]];cosi=-cosi;}
+    const eta=n1/n2, k=1-eta*eta*(1-cosi*cosi);
+    if(k<0)return null;
+    const f=eta*cosi-Math.sqrt(k);
+    return [eta*D[0]+f*N[0], eta*D[1]+f*N[1]];
+  }
+  function realTrace(y,xin){ // parallel input at height y; absolute coordinates
+    const P=[xin,y], D=[1,0];
+    const h1=sphereHit(P,D,0,RL.C1); if(!h1)return {miss:1,pts:[P]};
+    const D1=snell2(D,h1.nrm,1,RL.n); if(!D1)return {tir:1,pts:[P,h1.p]};
+    const h2=sphereHit(h1.p,D1,RL.t,RL.C2); if(!h2)return {miss:2,pts:[P,h1.p]};
+    const D2=snell2(D1,h2.nrm,RL.n,1); if(!D2)return {tir:2,pts:[P,h1.p,h2.p]};
+    let cross=null;
+    if(Math.abs(D2[1])>1e-12){const s=-h2.p[1]/D2[1]; if(s>0)cross=h2.p[0]+s*D2[0];}
+    return {pts:[P,h1.p,h2.p], D2, cross};
+  }
+  const sag=(C,y)=>{const q=1-C*C*y*y; return q>0 ? C*y*y/(1+Math.sqrt(q)) : null;};
+  function drawReal(){
+    const cv=$("c4"),{g,w,h}=fit(cv);
+    g.clearRect(0,0,w,h);
+    const {C1,C2,t,n,A}=RL, N=Math.round(RL.N);
+    // paraxial reference, unit input height (BFD/EFL are height-independent)
+    const p1=(n-1)*C1, p2=(1-n)*C2, phiT=p1+p2-(t/n)*p1*p2;
+    const u1u=(0-p1)/n, y2u=1+u1u*t, u2u=n*u1u-y2u*p2;
+    const bfdP=Math.abs(u2u)>1e-9?-y2u/u2u:Infinity, efl=Math.abs(u2u)>1e-9?-1/u2u:Infinity;
+    const marg=realTrace(A,-40), zon=realTrace(0.7*A,-40);
+    const lsa=(marg.cross!=null&&isFinite(bfdP))?(marg.cross-t)-bfdP:null;
+    // frame
+    const focusX=(isFinite(bfdP)&&bfdP>0)?t+bfdP:t+50;
+    let xmax=Math.min(Math.max(focusX,(marg.cross!=null?marg.cross:0),t+40)+16, t+420);
+    const xmin=-40, yext=Math.max(A*1.3,20);
+    const m=18, S=Math.min((w-2*m)/(xmax-xmin),(h-2*m)/(2*yext));
+    const ox=m-xmin*S, ay=h/2, to=(x,y)=>[ox+x*S,ay-y*S];
+    axisArrow(g,to(xmin,0),to(xmax,0));
+    // paraxial vertex planes (dashed) + the actual glass
+    line(g,to(0,yext*0.92),to(0,-yext*0.92),"#6b7480",1,[5,4]);
+    line(g,to(t,yext*0.92),to(t,-yext*0.92),"#6b7480",1,[5,4]);
+    label(g,[to(0,yext*0.92)[0]+4,to(0,yext*0.92)[1]+12],"vertex planes (paraxial)","#6b7480",11);
+    let yL=Math.min(yext*0.88, A*1.15+2, Math.abs(C1)>1e-9?0.97/Math.abs(C1):1e9, Math.abs(C2)>1e-9?0.97/Math.abs(C2):1e9);
+    if(t+sag(C2,yL)-sag(C1,yL)<0){ // surfaces would cross: shrink the glass to zero edge thickness
+      let lo=0,hi=yL;
+      for(let i=0;i<40;i++){const mid=(lo+hi)/2;(t+sag(C2,mid)-sag(C1,mid)>0)?lo=mid:hi=mid;}
+      yL=lo;
+    }
+    const K=48, ysl=i=>-yL+2*yL*i/K;
+    g.beginPath();
+    for(let i=K;i>=0;i--){const p=to(sag(C1,ysl(i)),ysl(i)); i===K?g.moveTo(p[0],p[1]):g.lineTo(p[0],p[1]);}
+    for(let i=0;i<=K;i++){const p=to(t+sag(C2,ysl(i)),ysl(i)); g.lineTo(p[0],p[1]);}
+    g.closePath(); g.fillStyle="rgba(109,224,192,.08)"; g.fill();
+    g.strokeStyle="#6de0c0"; g.lineWidth=2.5;
+    g.beginPath(); for(let i=0;i<=K;i++){const p=to(sag(C1,ysl(i)),ysl(i)); i===0?g.moveTo(p[0],p[1]):g.lineTo(p[0],p[1]);} g.stroke();
+    g.beginPath(); for(let i=0;i<=K;i++){const p=to(t+sag(C2,ysl(i)),ysl(i)); i===0?g.moveTo(p[0],p[1]):g.lineTo(p[0],p[1]);} g.stroke();
+    // rays
+    let tirAny=false, missAny=false;
+    for(let k=0;k<N;k++){
+      const yk=(N===1)?0:(-A+2*A*k/(N-1));
+      // paraxial ray, dashed blue
+      const pu1=(0-yk*p1)/n, py2=yk+pu1*t, pu2=n*pu1-py2*p2;
+      line(g,to(xmin,yk),to(0,yk),"#4a9de8",1.4,[5,4]);
+      line(g,to(0,yk),to(t,py2),"#4a9de8",1.4,[5,4]);
+      line(g,to(t,py2),to(xmax,py2+pu2*(xmax-t)),"#4a9de8",1.4,[5,4]);
+      // real ray, solid orange
+      if(Math.abs(yk)<1e-6){ line(g,to(xmin,0),to(xmax,0),"#e0a33c",1.6); continue; }
+      const tr=realTrace(yk,xmin);
+      for(let i=0;i+1<tr.pts.length;i++) line(g,to(tr.pts[i][0],tr.pts[i][1]),to(tr.pts[i+1][0],tr.pts[i+1][1]),"#e0a33c",2.2);
+      if(tr.D2){
+        const pe=tr.pts[tr.pts.length-1];
+        line(g,to(pe[0],pe[1]),to(xmax,pe[1]+tr.D2[1]/tr.D2[0]*(xmax-pe[0])),"#e0a33c",2.2);
+        if(tr.cross!=null&&tr.cross>t&&tr.cross<xmax) dot(g,to(tr.cross,0),3,"#e0a33c");
+      }else if(tr.tir){ tirAny=true; const pe=tr.pts[tr.pts.length-1]; label(g,[to(pe[0],pe[1])[0]+6,to(pe[0],pe[1])[1]],"TIR","#f0968c",12); }
+      else missAny=true;
+    }
+    // paraxial focus + LSA bracket
+    if(isFinite(bfdP)&&bfdP>0){
+      if(t+bfdP<=xmax-4){
+        line(g,to(t+bfdP,yext*0.8),to(t+bfdP,-yext*0.8),"#5ec06a",1.2);
+        dot(g,to(t+bfdP,0),5,"#5ec06a");
+        label(g,[to(t+bfdP,0)[0],to(t+bfdP,yext*0.8)[1]-6],"F′ paraxial","#5ec06a",13,"center");
+      }else{
+        label(g,[to(xmax,0)[0]-6,to(xmax,0)[1]-12],"F′ paraxial far →  (BFD = "+bfdP.toFixed(0)+" mm)","#5ec06a",13,"right");
+      }
+      if(lsa!=null&&Math.abs(lsa)>0.5&&marg.cross>t&&t+bfdP<=xmax-4){
+        const yb=-yext*0.32, a=to(marg.cross,yb), b2=to(t+bfdP,yb);
+        line(g,a,b2,"#f0968c",1.4); line(g,to(marg.cross,yb),to(marg.cross,0),"#f0968c",1,[3,3]);
+        label(g,[(a[0]+b2[0])/2,a[1]+16],"LSA = "+lsa.toFixed(1)+" mm","#f0968c",12,"center");
+      }
+    }
+    // readout
+    setTxt("rl_p1",p1.toFixed(5));setTxt("rl_p2",p2.toFixed(5));setTxt("rl_phi",phiT.toFixed(5));
+    setTxt("rl_efl",isFinite(efl)?efl.toFixed(1):"∞");setTxt("rl_bfdp",isFinite(bfdP)?bfdP.toFixed(1):"∞");
+    setTxt("rl_A",A.toFixed(0));
+    setTxt("rl_marg",marg.cross!=null?(marg.cross-t).toFixed(1):"—");
+    setTxt("rl_zon",zon.cross!=null?(zon.cross-t).toFixed(1):"—");
+    setTxt("rl_lsa",lsa!=null?lsa.toFixed(1):"—");
+    const st=$("rl_state"),msg=$("rl_msg");
+    if(tirAny){st.className="pill div";st.textContent="TIR!";
+      msg.textContent="Total internal reflection: the outer rays hit the exit surface beyond the critical angle and never leave the glass. Paraxial optics cannot even see this — reduce the aperture, curvature, or index.";}
+    else if(missAny){st.className="pill div";st.textContent="rays miss";
+      msg.textContent="The outer rays miss the glass — the aperture is larger than this lens allows (at these curvatures the surfaces run out or cross). Reduce A, flatten the curvatures, or increase t.";}
+    else if(!isFinite(bfdP)||bfdP<=0||lsa==null){st.className="pill flat";st.textContent="no real focus";
+      msg.textContent="No real focus on this side (afocal or diverging) — give the lens net positive power to compare focal points.";}
+    else if(Math.abs(lsa)<0.5){st.className="pill conv";st.textContent="≈ paraxial";
+      msg.textContent="Real and paraxial rays nearly coincide: at small angles sin I ≈ I, so Eq 4.1 is exact in the limit. This is why the paraxial world is the designer's first map — it tells you where the image SHOULD be.";}
+    else{st.className="pill div";st.textContent="spherical aberration";
+      msg.textContent="The marginal ray focuses "+Math.abs(lsa).toFixed(1)+" mm "+(lsa<0?"short of":"beyond")+" the paraxial focus — spherical aberration. sin I = I − I³/6 + …, and the I³ term is exactly what the paraxial world discards; it grows as y², so doubling the aperture roughly quadruples LSA. Real rays never meet at ONE point — that spread is the blur lens designers fight.";}
+    const ok=phiT>0.015&&lsa!=null&&Math.abs(lsa)<0.5&&!tirAny&&!missAny;
+    $("chal3").classList.toggle("ok",ok);
+    setTxt("chal3st",ok?"✓ solved — small y ⇒ sin I ≈ I ⇒ the paraxial world becomes exact!":"not solved yet");
+  }
+  control("s_C1","n_C1",RL,"C1",drawReal);control("s_C2","n_C2",RL,"C2",drawReal);
+  control("s_rt","n_rt",RL,"t",drawReal);control("s_rn","n_rn",RL,"n",drawReal);
+  control("s_rA","n_rA",RL,"A",drawReal);control("s_rN","n_rN",RL,"N",drawReal);
+
   // ---- presets ----
   document.querySelectorAll("[data-p1]").forEach(b=>b.addEventListener("click",()=>{
     const kv={y:B.y,u:B.u,C:B.C,n:B.n,np:B.np};
@@ -625,11 +798,19 @@
     else{const f=Math.max(I.f,60);setCtl("s_f","f",f);setCtl("s_d","d",Math.round(0.75*f));}
     drawImg();
   }));
+  document.querySelectorAll("[data-p4]").forEach(b=>b.addEventListener("click",()=>{
+    const kv={};
+    b.dataset.p4.split(",").forEach(s=>{const[k,v]=s.split(":");kv[k]=parseFloat(v);});
+    setCtl("s_C1","C1",kv.C1);setCtl("s_C2","C2",kv.C2);setCtl("s_rt","t",kv.t);
+    setCtl("s_rn","n",kv.n);setCtl("s_rA","A",kv.A);setCtl("s_rN","N",kv.N);
+    drawReal();
+  }));
 
   window.addEventListener("resize",()=>{
     if($("panel-bend").style.display!=="none")drawBend();
     else if($("panel-trace").style.display!=="none")drawTrace();
-    else drawImg();
+    else if($("panel-image").style.display!=="none")drawImg();
+    else drawReal();
   });
   drawBend();
 })();
